@@ -3,19 +3,22 @@ close all
 
 numImages = 99878;
 
-pooledDir = '/home/mel/four_orientations_experimental_features_jong_orig_db_post_50';
-outputBaseDir = '/home/margot/2DP_Pipeline/FeatureWiseTablesNewBatch/';
+%pooledDir = '/home/mel/four_orientations_experimental_features_jong_orig_db_post_50';
+pooledDir = '/home/margot/2DP_Pipeline/storedPooledCountsImgNet'
+outputBaseDir = '/home/margot/2DP_Pipeline/FeatureWiseTablesImgNet/';
 
 % Auto-discover feature types from pooled0_*.mat files
-pooledFiles = dir(fullfile(pooledDir, 'pooled0_*.mat'));
+pooledFiles = dir(fullfile(pooledDir, 'storingPooledCountsSub0_*.mat'));
 featureTypes = string.empty;
 for f = 1:numel(pooledFiles)
     name = pooledFiles(f).name;
     % Strip 'pooled0_' prefix and '.mat' suffix
     
-    ft = extractBetween(name, 'pooled0_', '.mat');
+    ft = extractAfter(name,'imgNetsum5ori_');
+    ft = extractBefore(ft,'.mat');
     featureTypes(end+1) = ft;
 end
+
 
 fprintf('Found %d feature types: %s\n\n', numel(featureTypes), strjoin(featureTypes, ', '));
 
@@ -35,18 +38,18 @@ for a = 1:length(featureTypes)
 
         fprintf('Processing: %s sub%s\n', featureType, subframe);
 
-        load(strcat(pooledDir, '/pooled', subframe, '_', featureType, '.mat'), strcat('storingPooled', subframe))
+        load(strcat(pooledDir, '/storingPooledCountsSub', subframe, '_imgNetsum5ori_', featureType, '.mat'), strcat('storingPooledCounts', subframe,'Final'))
 
         disp("loaded")
-
+%{
         if subframe == "0"
             load('sumtotalFeatureCountsSub0.mat','sumtotalFeatureCounts')
         else
             load(strcat('sumTotalFeatureCountsSub',subframe,'.mat'),'sumtotalFeatureCounts')
         end
-
+%}
         numUniqueFeatures = 4000;
-        numOrientations = 4;
+        numOrientations = 1;
         totalFeatures  = numUniqueFeatures*numOrientations;
 %{
         if subframe == "0"
@@ -65,21 +68,20 @@ for a = 1:length(featureTypes)
 
         for i = 1:numUniqueFeatures
             disp(i)
-            indexOfOrientations = [i,i+(1*numUniqueFeatures),i+(2*numUniqueFeatures),i+(3*numUniqueFeatures)];
-
-            if subframe == "0"
-                rawCountRows = storingPooled0(indexOfOrientations, :);
-            elseif subframe == "1"
-                rawCountRows = storingPooled1(indexOfOrientations, :);
-            elseif subframe == "2"
-                rawCountRows = storingPooled2(indexOfOrientations, :);
-            end
+        
+                if subframe == "0"
+                    rawCountRows = storingPooledCounts0Final(i, :);
+                elseif subframe == "1"
+                    rawCountRows = storingPooledCounts1Final(i, :);
+                elseif subframe == "2"
+                    rawCountRows = storingPooledCounts2Final(i, :);
+                end
 
             dicts = cell(1, 10);
 
-            for p = 1:numel(bins)-1
+            for p = 1:10
 
-                countsToMakeTable = rawCountRows(:,imageBins==p);
+                countsToMakeTable = rawCountRows(:,binIndex==p);
                 sortedRawCounts = sort(countsToMakeTable(:));
                 truncSortedRawCounts = sortedRawCounts(sortedRawCounts>0);
 
